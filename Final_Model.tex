@@ -1,0 +1,349 @@
+\documentclass[journal]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{subfig}
+\usepackage{wrapfig}
+
+\begin{document}
+
+\newcommand{\norm}[1]{\mid#1\mid}
+\newcommand{\del}[1]{\nabla#1}
+\newcommand{\ddel}[1]{\nabla^2#1}
+
+%SS
+% paper title
+% can use linebreaks \\ within to get better formatting as desired
+%\title{An Investigation of the Mechanics of Loaded Dice}
+\title{A Model of an N-Body System at Fixed Electrical Potentials}
+%
+%
+% author names and IEEE memberships
+% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
+% a structure at a ~ so this keeps an author's name from being broken across
+% two lines.
+% use \thanks{} to gain access to the first footnote area
+% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
+% was not built to handle multiple paragraphs
+%
+
+\author{Jared Kirschner, Noah Tye
+
+\thanks{J. Kirschner and N. Tye are undergraduate students at Franklin W. Olin College of Engineering, 1000 Olin Way, Needham, MA 02492.  E-mail (respectively): Jared.Kirschner@Students.olin.edu and Noah.Tye@Students.olin.edu.}}
+
+%
+% a space would be appended to the last name and could cause every name on that
+% line to be shifted left slightly. This is one of those "LaTeX things". For
+% instance, "\textbf{A} \textbf{B}" will typeset as "A B" not "AB". To get
+% "AB" then you have to do: "\textbf{A}\textbf{B}"
+% \thanks is no different in this regard, so shield the last } of each \thanks
+% that ends a line with a % and do not let a space in before the next \thanks.
+% Spaces after \IEEEmembership other than the last one are OK (and needed) as
+% you are supposed to have spaces between the names. For what it is worth,
+% this is a minor point as most people would not even notice if the said evil
+% space somehow managed to creep in.
+
+
+
+% The paper headers
+\markboth{Electromagnetism: A Modeling and Simulation Approach.  Project 3: Model Discussion.  Friday, April 30, 2010.}{}
+
+\maketitle
+
+\begin{abstract}
+
+We discuss the creation of a model which can be used to dynamically simulate a system of n-bodies at fixed electrical potentials within any defined boundary.  We will also describe how this model can be discretized and solved numerically.
+
+\end{abstract}
+% IEEEtran.cls defaults to using nonbold math in the Abstract.
+% This preserves the distinction between vectors and scalars. However,
+% if the journal you are submitting to favors bold math in the abstract,
+% then you can use LaTeX's standard command \boldmath at the very start
+% of the abstract to achieve this. Many IEEE journals frown on math
+% in the abstract anyway.
+
+% Note that keywords are not normally used for peerreview papers.
+%\begin{IEEEkeywords}
+%IEEEtran, journal, \LaTeX, paper, template.
+%\end{IEEEkeywords}
+%
+
+
+% For peer review papers, you can put extra information on the cover
+% page as needed:
+% \ifCLASSOPTIONpeerreview
+% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+% \fi
+%
+% For peerreview papers, this IEEEtran command inserts a page break and
+% creates the second title. It will be ignored for other modes.
+%\IEEEpeerreviewmaketitle
+
+
+\section{Introduction}
+
+\IEEEPARstart{M}{any} questions in electromagnetism require one to solve for the electric potential and/or electric field in a defined segment of space.  Some solutions, such as integral formulations, are only useful for simplistic situations.  The resulting integral often cannot be evaluated analytically due to its complexity and will only work if the rest of the universe is empty (in other words, the boundary conditions are assumed to be zero at infinity).  In cases of high symmetry, we can solve for the electric field with Gauss' Law much more quickly than with an integral formulation.  However, Gauss' Law also assumes that the rest of the universe is empty, or can only be accurate over small regions of space.  By using a complete basis set and Fourier's ``trick,'' one can derive an equation describing the voltage between defined boundaries (from which the electric field can be derived).  However, such an approach is only feasible in cases with simple boundaries.  Herein we shall develop a model which can be used to model and behavior of any boundary condition containing any number of bodies.  This approach will use a discrete model which can be described by a matrix equation.  This matrix equation can this be solved numerically to show the voltage and electric field at any point.
+
+\section{Governing Equations}
+
+% $ \ddel{V} = 0 $
+% $ E = -\del{V} $
+% $ P = FA = .5 * A * Eo * |E|^2 nhat ... F = q(E + v x B) $
+
+According to Poisson's Equation, the net curvature of the potential at an arbitrary region is $\ddel{V} = \frac{\rho}{\epsilon_0}$, where $V$ is the electrical potential, $\rho$ is the charge density, and $\epsilon_0$ is the permittivity of free space.  In regions without charge, we have Laplace's Equation:
+
+\begin{align}
+\ddel{V} = 0 \label{LaP}
+\end{align}
+
+We can then derive the electric field from the potential difference through the following definition:
+
+\begin{align}
+E = -\del{V} \label{delV}
+\end{align}
+
+Lastly, we must consider the force acting on each object from its interactions with other objects and the boundaries.  Each object of fixed potential will tend to move towards the region with the strongest electric field.  The electrostatic pressure at each point is equal to:
+
+\begin{align}
+\vec{P} = \int\vec{F}dA = \int \frac{1}{2} \epsilon_0 {\norm{E}}^2 dA~\ \hat{n} \label{Pres}
+\end{align}
+
+\ldots where $\vec{P}$ is the pressure, $\vec{F}$ is the force, $dA$ is the differential area, $\epsilon_0$ is the permittivity of free space, and $\hat{n}$ is the normal unit vector to the surface.  By integrating the contributions to the electrostatic pressure along the entire surface of the object and then dividing by the surface area, we obtain the net force.  We can then divide this force vector by the mass of each object in order to obtain its acceleration vector.
+
+\section{The Model}
+
+In order to solve Laplace's equation (equation \ref{LaP}), we will formulate a matrix equation which can be solved in matrix.  For a position $p_{n,m}$, the solution to Laplace's equation can be expressed as:
+
+\begin{align}
+\ddel{V_{n,m}} = \frac{V_{n-1,m} + V_{n+1,m} + V_{n,m-1} + V_{n,m+1}}{4} \label{discLaP}
+\end{align}
+
+In order to determine the general formula for the matrix equation, we can write out the equations for all points within a small grid of $n \cdot m$ internal points and an outer boundary (top $t_{1:n}$, left $l_{1:m}$, bottom $b_{1:n}$, right $r_{1:m}$).  For example, point 1,1 will have the following equation: $\frac{V_{t_1} + V_{l_1} + V_{2,1} + V_{2,1}}{4} = 0$.  All constants will move to the right side of the equation; in the given example equation, the two boundary conditions will both be constants and move to the right side.  If either point $V_{1,2}$ or $V_{2,1}$ is defined, these will also move to the right side of the equation.  We then place the elements on the left side of the equation into an $n \times m$ diagonal matrix, $D$, and the right side of the equations into a columnwise vector of $n \cdot m$ elements, $b$.  By dividing $D$ into $b$, we solve for a columnwise vector $v$ of potentials where the indicies 1:$n \cdot m$ correspond to indicies associated with each subscripted point.
+
+After writing out a small ($x \times y$) matrix by hand, one can derive the following general patterns:
+
+\begin{enumerate}
+\item{The central diagonal is always equal to $-1$.}
+\item{The $\pm1$ diagonals have a pattern such that there is a repeated unit where the first $x-1$ elements are $\frac{1}{4}$, and the $({x-1})^{th}$ element is 0.}
+\item{The $\pm x$ diagonals are always equal to $\frac{1}{4}$.}
+\end{enumerate}
+
+We can also write out the general pattern for the columnwise vector $b$ using the same assumptions:
+
+\begin{enumerate}
+\item{Top Row: For the first ${lenX}^{th}$ elements, we will add a constant of $-\frac{V_{t_n}}{4}$ where $n$ is the current position in the array of appropriate elements.}
+\item{Bottom Row: For the last row ($x \cdot (y - 1) + 1:x \cdot y$ elements), we will add a constant of $-\frac{V_{b_n}}{4}$ where $n$ is the current position in the array of appropriate elements.}
+\item{Left Row: For every index $i \cdot x + 1$ where $i$ is any non-negative integer below $y$, we will add a constant of $-\frac{V_{l_{i+1}}}{4}$.}
+\item{Right Row: For every index $i \cdot x$ where $i$ is any positive integer value less than or equal to $y$, we will add a constant of $-\frac{V_{r_i}}{4}$.}
+\end{enumerate}
+
+Lastly, to account for positions within the grid that one wishes to define, change all points which had been defined as variables in the matrix $D$ to zero, and move the defined values into the columnwise vector $b$ as dictated by the equations.  For example, if a point is defined within a row of the matrix to have a coefficient of $\frac{1}{4}$, this coefficient will have to be applied to the constant (and the sign changed, reflecting moving the constant to the other side of the equation) to move it accurately into the columnwise vector $b$ of constants.  As this element has now been defined, the row corresponding to its index will be removed from the matrix and the columnwise vector.
+
+After performing this operation on all defined points, the matrix equation can be solved numerically in one step.  However, as the matrix has dimensions of ${(n \cdot m)}^2$, one will find that such a computation can be fairly memory intensive.  In order to vastly reduce the memory usage of the program, one can use sparse matrices, which essentially map subscripts to all non-zero elements of a matrix.  As the matrix we have created is mostly zeros, a very high compression (between $10^2$ and $10^3$) can be achieved.
+
+The solution to this matrix equation will yield the potential at all internal points of the grid.  Using equation \ref{delV}, we can solve for the electric field at all internal points.  With the electric field, we can calculate the net force on the surface of an object of defined potential using equation \ref{Pres}.  Through these methods, one can not only calculate the field for $n$ bodies, but simulate their motion through time.
+
+% An example of a floating figure using the graphicx package.
+% Note that \label must occur AFTER (or within) \caption.
+% For figures, \caption should occur after the \includegraphics.
+% Note that IEEEtran v1.7 and later has special internal code that
+% is designed to preserve the operation of \label within \caption
+% even when the captionsoff option is in effect. However, because
+% of issues like this, it may be the safest practice to put all your
+% \label just after \caption rather than within \caption{}.
+%
+% Reminder: the "draftcls" or "draftclsnofoot", not "draft", class
+% option should be used if it is desired that the figures are to be
+% displayed while in draft mode.
+%
+%\begin{figure}[!t]
+%\centering
+%\includegraphics[width=2.5in]{myfigure}
+% where an .eps filename suffix will be assumed under latex,
+% and a .pdf suffix will be assumed for pdflatex; or what has been declared
+% via \DeclareGraphicsExtensions.
+%\caption{Simulation Results}
+%\label{fig_sim}
+%\end{figure}
+
+% Note that IEEE typically puts floats only at the top, even when this
+% results in a large percentage of a column being occupied by floats.
+
+
+% An example of a double column floating figure using two subfigures.
+% (The subfig.sty package must be loaded for this to work.)
+% The subfigure \label commands are set within each subfloat command, the
+% \label for the overall figure must come after \caption.
+% \hfil must be used as a separator to get equal spacing.
+% The subfigure.sty package works much the same way, except \subfigure is
+% used instead of \subfloat.
+%
+%\begin{figure*}[!t]
+%\centerline{\subfloat[Case I]\includegraphics[width=2.5in]{subfigcase1}%
+%\label{fig_first_case}}
+%\hfil
+%\subfloat[Case II]{\includegraphics[width=2.5in]{subfigcase2}%
+%\label{fig_second_case}}}
+%\caption{Simulation results}
+%\label{fig_sim}
+%\end{figure*}
+%
+% Note that often IEEE papers with subfigures do not employ subfigure
+% captions (using the optional argument to \subfloat), but instead will
+% reference/describe all of them (a), (b), etc., within the main caption.
+
+
+% An example of a floating table. Note that, for IEEE style tables, the
+% \caption command should come BEFORE the table. Table text will default to
+% \footnotesize as IEEE normally uses this smaller font for tables.
+% The \label must come after \caption as always.
+%
+%\begin{table}[!t]
+%% increase table row spacing, adjust to taste
+%\renewcommand{\arraystretch}{1.3}
+% if using array.sty, it might be a good idea to tweak the value of
+% \extrarowheight as needed to properly center the text within the cells
+%\caption{An Example of a Table}
+%\label{table_example}
+%\centering
+%% Some packages, such as MDW tools, offer better commands for making tables
+%% than the plain LaTeX2e tabular which is used here.
+%\begin{tabular}{|c||c|}
+%\hline
+%One & Two\\
+%\hline
+%Three & Four\\
+%\hline
+%\end{tabular}
+%\end{table}
+
+
+% Note that IEEE does not put floats in the very first column - or typically
+% anywhere on the first page for that matter. Also, in-text middle ("here")
+% positioning is not used. Most IEEE journals use top floats exclusively.
+% Note that, LaTeX2e, unlike IEEE journals, places footnotes above bottom
+% floats. This can be corrected via the \fnbelowfloat command of the
+% stfloats package.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%\appendices
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% trigger a \newpage just before the given reference
+% number - used to balance the columns on the last page
+% adjust value as needed - may need to be readjusted if
+% the document is modified later
+%\IEEEtriggeratref{8}
+% The "triggered" command can be changed if desired:
+%\IEEEtriggercmd{\enlargethispage{-5in}}
+
+% references section
+
+% can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+%\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+%
+% <OR> manually copy in the resultant .bbl file
+% set second argument of \begin to the number of references
+% (used to reserve space for the reference number labels box)
+%\begin{thebibliography}{}
+%
+%
+%
+%\end{thebibliography}
+
+% biography section
+%
+% If you have an EPS/PDF photo (graphicx package needed) extra braces are
+% needed around the contents of the optional argument to biography to prevent
+% the LaTeX parser from getting confused when it sees the complicated
+% \includegraphics command within an optional argument. (You could create
+% your own custom macro containing the \includegraphics command to make things
+% simpler here.)
+%\begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{mshell}}]{Michael Shell}
+% or if you just want to reserve a space for a photo:
+
+%\begin{IEEEbiography}{#sources}
+%
+%
+%\end{IEEEbiography}
+
+% if you will not have a photo at all:
+%\begin{IEEEbiographynophoto}{name}
+%
+%\end{IEEEbiographynophoto}
+
+% insert where needed to balance the two columns on the last page with
+% biographies
+%\newpage
+
+%\begin{IEEEbiographynophoto}{name}
+%
+%
+%\end{IEEEbiographynophoto}
+
+% You can push biographies down or up by placing
+% a \vfill before or after them. The appropriate
+% use of \vfill depends on what kind of text is
+% on the last page and whether or not the columns
+% are being equalized.
+
+%\vfill
+
+% Can be used to pull up biographies so that the bottom of the last one
+% is flush with the other column.
+%\enlargethispage{-5in}
+
+
+
+% that's all folks
+\end{document}
+
+
